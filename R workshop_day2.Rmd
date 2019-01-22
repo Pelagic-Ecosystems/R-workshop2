@@ -95,9 +95,190 @@ long_surveys_gw <-wide_surveys_gw %>%
 
 
 ```{r}
-tidy_gsi <- read_csv(here::here("write_data", "tidy_gsi.csv"))
+tidy_gsi <- read_csv(here::here("read_data", "tidy_gsi.csv"))
 view(tidy_gsi)
 
 ```
+# Analysing data
+
+## Importing from Hakai Data Portal
+
+Switched to data_wrangling script to import data into our read_data file
+
+Chl_a, fish and sockeye stock ID data
+
+```{r}
+library(here)
+
+fish <-read_csv(here("read_data", "fish.csv"))
+                
+chla <- read_csv(here("read_data", "chla.csv"))
+
+tidy_gsi <- read_csv(here("read_data", "tidy_gsi.csv"))
+
+fish %>% 
+  count(species)
+                
+fish_d09 <- fish %>% 
+  filter(site_id == "D09") %>% 
+  select(hakai_id, jsp_survey_id, seine_id, date, species, site_id, fork_length, weight) %>% 
+  mutate(k = (10^5 * weight) / fork_length^3) %>% 
+  drop_na(k)
+```
+
+### Annoying things that will get you
+
+## Factors
+
+```{r}
+str(fish_d09)
+
+#or
+
+class(fish_d09$species)
 
 
+#coerce a column to be a factor
+
+fish_d09$species <- factor(fish_d09$species)
+
+levels(fish_d09$species)
+
+```
+
+If you have factors that are numbers, don't try to do maths with these Under the hood R will treat your factor levels as numbers.
+
+
+## Dates
+
+read_csv(): treats ISO date standards (yyyy-mm-dd) as a DATE object
+read.csv(): treats them as characters - not ideal
+
+Lubridate package - to help with dates
+
+```{r}
+library(lubridate)
+
+# Extract data components (day, month, year, Julian day/yday)
+
+fish_d09 <- fish_d09 %>% 
+  mutate(year = year(date),
+         month = month(date),
+         week = week(date),
+         yday = yday(date))
+
+# to change format of column to DATE
+
+#fish_d09$date <- as.date(fish_d09$date)
+```
+
+# Can do maths with lubridate
+
+* periods
+*intervals
+*durations
+
+##Joining data
+
+Data:
+
+*chla
+*tidy_gsi
+*fish_d09
+
+```{r}
+
+# see dplyr cheatsheet for help on this
+
+left_join(fish_d09, tidy_gsi, by = "hakai_id") 
+
+right_join(fish_d09, tidy_gsi, by = "hakai_id")
+
+inner_join(fish_d09, tidy_gsi, by = "hakai_id")  #rows that have all required data
+
+anti_join(fish_d09, tidy_gsi, by = "hakai_id")   #rows that DON'T have a match, i.e. NAs
+
+#view()  displays results for last function (if haven't created it as new df)
+
+```
+
+##ggplot2
+
+To build a ggplot:
+
+ggplot(data = DATA, mapping = aes(MAPPINGS))
+  + GEOM_FUNCTION()
+  
+  Example:
+  
+#ggplot(data = surveys, mapping = aes(species, weight)) +
+  #+geom_point()
+  
+```{r}
+ggplot(fish_d09, aes()) +
+  geom_point(aes(x = yday, y = fork_length))+
+  geom_smooth(aes(x = yday, y = fork_length), model = lm)+
+  theme_classic()+
+  facet_grid(species~.)    #separates data by specified variable
+
+#or facet_wrap(species~.)
+
+ggplot(fish_d09, aes()) +
+  geom_point(aes(x = yday, y = fork_length))+
+  geom_smooth(aes(x = yday, y = fork_length), model = lm)+
+  theme_classic()+
+  facet_wrap(species~.)  
+
+# check out different bg themes, _bw (gridlines) and _classic (no gridlines)
+
+```
+  
+  Cookbook for R http://www.cookbook-r.com/
+  
+  
+  How to adjust legends, axes, etc.
+  
+  Geom list:
+  
+  tidyverse.org/reference
+  
+  https://dplyr.tidyverse.org/reference/index.html
+  
+  
+  
+  ## Playtime
+  
+```{r}
+
+
+  
+  
+chla_date <- chla %>% 
+    group_by(date) %>% 
+    summarize(mean_chla = mean(chla, na.rm = TRUE))
+
+chla_date <- chla_date %>% 
+  mutate(year = year(date),
+         month = month(date),
+         week = week(date),
+         yday = yday(date))
+    
+
+ggplot(chla_date, aes()) +
+  geom_point(aes(x = yday, y = mean_chla))+
+    theme_classic()+
+    facet_grid(year~.)
+
+ggplot(chla_date, aes()) +
+  geom_point(aes(x = yday, y = mean_chla))+
+    theme_classic()+
+    facet_wrap(year~.)
+
+  
+  
+           
+  
+  
+  
+
+```
