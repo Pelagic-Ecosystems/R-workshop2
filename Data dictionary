@@ -1,0 +1,21 @@
+# Data dictionary
+
+hakai_id:
+  *Description: primary key that allows to join results to sample collection metadata
+  
+metadata
+  * Units: NA
+  
+  
+stock_1:
+  * The name of stock of sockeye salom that CBAYES algorithm esitimated for our sample
+  
+  
+prob_1:
+  * probabilitythat sample from stock 1
+  * Units: NA
+  
+region_1:
+  *region that stock 1 is from
+  * see README for possible regions
+  
